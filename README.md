@@ -1,0 +1,1 @@
+# Ansible Collection - sdorra.adguard
