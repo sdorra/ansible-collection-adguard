@@ -4,6 +4,103 @@ from ansible.module_utils.basic import AnsibleModule
 import requests
 from requests.auth import HTTPBasicAuth
 
+# Copyright: (c) 2020, Sebastian Sdorra <s.sdorra@gmail.com>
+# MIT License (see https://opensource.org/licenses/MIT)
+
+ANSIBLE_METADATA = {
+    'metadata_version': '1.1',
+    'status': ['preview'],
+    'supported_by': 'community'
+}
+
+DOCUMENTATION = r'''
+---
+module: adguard_rewrite
+short_description: Manage rewrites on AdGuard
+description:
+  - This module allows you to create and delete rewrites on AdGuard using the AdGuard API.
+options:
+  state:
+    description:
+      - Whether the rewrite should exist or not.
+    choices: [ 'present', 'absent' ]
+    default: 'present'
+  servers:
+    description:
+      - List of AdGuard servers to manage rewrites on.
+    required: true
+    type: list
+    elements: dict
+    options:
+      url:
+        description:
+            - URL of the AdGuard server.
+        required: true
+        type: str
+      username:
+        description:
+            - Username for the AdGuard server.
+        required: true
+        type: str
+      password:
+        description:
+            - Password for the AdGuard server.
+        required: true
+        type: str
+        no_log: true
+  rewrites:
+    description:
+      - List of rewrites to manage.
+    required: true
+    type: list
+    elements: dict
+    options:
+      domain:
+        description:
+            - The domain name or wildcard you want to rewrite.
+        required: true
+        type: str
+      answer:
+        description:
+            - IP address or domain name to rewrite to.
+        required: true
+        type: str
+'''
+
+EXAMPLES = r'''
+# Create a rewrite
+- adguard_rewrite:
+    state: present
+    servers:
+      - url: http://localhost:3000
+        username: admin
+        password: password
+    rewrites:
+      - domain: example.com
+        answer: 192.168.1.42
+
+# Delete a rewrite
+- adguard_rewrite:
+    state: absent
+    servers:
+      - url: http://localhost:3000
+        username: admin
+        password: password
+    rewrites:
+      - domain: example.com
+        answer: 192.168.1.42
+'''
+
+RETURNS = r'''
+changed:
+  description: Whether the state of the rewrites was changed.
+  type: bool
+  returned: always
+msg:
+  description: A message describing what happened.
+  type: str
+  returned: always
+'''
 
 class AdGuardClient:
     def __init__(self, url, username, password):
@@ -109,8 +206,10 @@ def main():
     if is_error:
         module.fail_json(msg="Error managing rewrites", errors=errors)
     else:
-        module.exit_json(changed=has_changed, errors=errors)
-
+        msg = "no changes needed"
+        if has_changed:
+            msg = "rewrites modified"
+        module.exit_json(changed=has_changed, msg=msg, errors=errors)
 
 if __name__ == '__main__':
     main()
